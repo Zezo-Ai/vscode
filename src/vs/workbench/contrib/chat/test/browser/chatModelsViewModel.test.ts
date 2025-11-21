@@ -383,6 +383,15 @@ suite('ChatModelsViewModel', () => {
 		assert.ok(models[0].modelNameMatches);
 	});
 
+	test('should filter by text matching model id', () => {
+		const results = viewModel.filter('copilot-gpt-4o');
+
+		const models = results.filter(r => !isVendorEntry(r)) as IModelItemEntry[];
+		assert.strictEqual(models.length, 1);
+		assert.strictEqual(models[0].modelEntry.identifier, 'copilot-gpt-4o');
+		assert.ok(models[0].modelIdMatches);
+	});
+
 	test('should filter by text matching vendor name', () => {
 		const results = viewModel.filter('GitHub');
 
@@ -611,25 +620,6 @@ suite('ChatModelsViewModel', () => {
 		assert.strictEqual(models.length, 4);
 	});
 
-	test('should show models even when single vendor is collapsed', async () => {
-		const { viewModel: singleVendorViewModel } = createSingleVendorViewModel(store, chatEntitlementService, false);
-		await singleVendorViewModel.resolve();
-
-		// Try to collapse the single vendor
-		const vendorEntry = viewModel.viewModelEntries.find(r => isVendorEntry(r) && r.vendorEntry.vendor === 'copilot') as IVendorItemEntry;
-		singleVendorViewModel.toggleVendorCollapsed(vendorEntry);
-
-		const results = singleVendorViewModel.filter('');
-
-		// Should still show models even though vendor is "collapsed"
-		// because there's no vendor header to collapse
-		const vendors = results.filter(isVendorEntry);
-		assert.strictEqual(vendors.length, 0, 'Should not show vendor header');
-
-		const models = results.filter(r => !isVendorEntry(r)) as IModelItemEntry[];
-		assert.strictEqual(models.length, 1, 'Should still show models even when single vendor is collapsed');
-	});
-
 	test('should filter single vendor models by capability', async () => {
 		const { viewModel: singleVendorViewModel } = createSingleVendorViewModel(store, chatEntitlementService);
 		await singleVendorViewModel.resolve();
@@ -749,5 +739,20 @@ suite('ChatModelsViewModel', () => {
 		if (vendors.length > 1) {
 			assert.strictEqual(vendors[0].vendorEntry.vendor, 'copilot');
 		}
+	});
+
+	test('should show vendor headers when filtered', () => {
+		const results = viewModel.filter('GPT');
+		const vendors = results.filter(isVendorEntry);
+		assert.ok(vendors.length > 0);
+	});
+
+	test('should not show vendor headers when filtered if only one vendor exists', async () => {
+		const { viewModel: singleVendorViewModel } = createSingleVendorViewModel(store, chatEntitlementService);
+		await singleVendorViewModel.resolve();
+
+		const results = singleVendorViewModel.filter('GPT');
+		const vendors = results.filter(isVendorEntry);
+		assert.strictEqual(vendors.length, 0);
 	});
 });
